@@ -1,43 +1,46 @@
-# Astro Starter Kit: Minimal
+# Job Tracker
+
+A personal job application tracker built with Astro and React, backed by Supabase for auth and data, and deployed on Cloudflare Workers.
+
+## Features
+
+- **Dashboard** — application count, response rate, overdue follow-ups, and a weekly momentum chart
+- **Applications table** — sortable, filterable list of every application
+- **Board** — drag-and-drop Kanban view across `Applied → Phone Screen → Interview → Offer / Rejected`
+- **Magic-link auth** — passwordless sign-in via Supabase Auth
+
+## Stack
+
+- [Astro](https://astro.build) (SSR, `output: "server"`) + [React](https://react.dev) islands
+- [Supabase](https://supabase.com) — Postgres + Auth
+- [Tailwind CSS v4](https://tailwindcss.com)
+- [@dnd-kit](https://dndkit.com) for drag-and-drop
+- [Cloudflare Workers](https://workers.cloudflare.com) via `@astrojs/cloudflare`
+
+## Development
 
 ```sh
-npm create astro@latest -- --template minimal
+npm install
+npm run dev
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+Copy `.env.example` to `.env` and fill in your Supabase project's URL and anon key.
 
-## 🚀 Project Structure
+## Commands
 
-Inside of your Astro project, you'll see the following folders and files:
+| Command               | Action                                      |
+| :--------------------- | :------------------------------------------ |
+| `npm install`          | Install dependencies                         |
+| `npm run dev`           | Start the dev server at `localhost:4321`     |
+| `npm run build`         | Build for production                         |
+| `npm run preview`       | Preview the production build locally         |
+| `npx wrangler deploy`   | Deploy to Cloudflare Workers                 |
 
-```text
-/
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
+## Deployment
+
+This project deploys to Cloudflare Workers. `wrangler.jsonc` configures the Worker and static assets binding; Cloudflare auto-provisions the KV namespace (sessions) and Images binding on first deploy.
+
+```sh
+npm run build
+npx wrangler deploy
 ```
-
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
-
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
-
-Any static assets, like images, can be placed in the `public/` directory.
-
-## 🧞 Commands
-
-All commands are run from the root of the project, from a terminal:
-
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
