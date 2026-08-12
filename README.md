@@ -1,4 +1,4 @@
-# Job Tracker
+# Job Application Tracker
 
 A personal job application tracker built with Astro and React, backed by Supabase for auth and data, and deployed on Cloudflare Workers.
 

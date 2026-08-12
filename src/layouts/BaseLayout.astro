@@ -5,7 +5,7 @@ interface Props {
 	title?: string;
 }
 
-const { title = 'Job Tracker' } = Astro.props;
+const { title = 'Job Application Tracker' } = Astro.props;
 
 const ICONS: Record<string, string> = {
 	dashboard: '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
@@ -55,7 +55,7 @@ const activeHref = navItems
 									/>
 								</svg>
 							</span>
-							<span class="text-[15px] font-semibold tracking-tight text-white">Job Tracker</span>
+							<span class="text-sm font-semibold leading-tight tracking-tight text-white">Job Application Tracker</span>
 						</div>
 						<nav class="mt-2 flex flex-1 flex-col gap-0.5 px-3">
 							{navItems.map((item) => {
@@ -109,7 +109,7 @@ const activeHref = navItems
 
 					<div class="flex min-h-screen flex-1 flex-col bg-canvas lg:min-h-0">
 						<header class="flex items-center justify-between border-b border-line bg-surface px-4 py-3 lg:hidden">
-							<div class="flex items-center gap-2">
+							<div class="flex min-w-0 items-center gap-2">
 								<span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md bg-accent">
 									<svg viewBox="0 0 24 24" fill="none" class="h-3.5 w-3.5">
 										<path
@@ -121,7 +121,7 @@ const activeHref = navItems
 										/>
 									</svg>
 								</span>
-								<span class="text-sm font-semibold tracking-tight text-ink">Job Tracker</span>
+								<span class="truncate text-sm font-semibold tracking-tight text-ink">Job Application Tracker</span>
 							</div>
 							<form method="POST" action="/api/auth/signout">
 								<button
