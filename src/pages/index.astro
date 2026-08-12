@@ -4,6 +4,7 @@ export const prerender = false;
 import BaseLayout from '../layouts/BaseLayout.astro';
 import StatusBadge from '../components/ui/StatusBadge.astro';
 import { createSupabaseServerClient } from '../lib/supabase/server';
+import { STATUS_VALUES, type ApplicationStatus } from '../lib/supabase/types';
 
 const supabase = createSupabaseServerClient(Astro.request, Astro.cookies);
 const { data: applications, error } = await supabase.from('applications').select('*');
@@ -12,6 +13,18 @@ const all = applications ?? [];
 const total = all.length;
 const responded = all.filter((a) => a.status !== 'applied');
 const responseRate = total > 0 ? Math.round((responded.length / total) * 100) : 0;
+
+const STATUS_META: Record<ApplicationStatus, { label: string; bar: string; dot: string }> = {
+	applied: { label: 'Applied', bar: 'bg-subtle', dot: 'bg-subtle' },
+	phone_screen: { label: 'Phone Screen', bar: 'bg-accent', dot: 'bg-accent' },
+	interview: { label: 'Interview', bar: 'bg-warning', dot: 'bg-warning' },
+	offer: { label: 'Offer', bar: 'bg-success', dot: 'bg-success' },
+	rejected: { label: 'Rejected', bar: 'bg-danger', dot: 'bg-danger' }
+};
+const statusCounts = STATUS_VALUES.map((status) => ({
+	status,
+	count: all.filter((a) => a.status === status).length
+}));
 
 const today = new Date().toISOString().slice(0, 10);
 const overdue = all
@@ -85,6 +98,37 @@ const weekFormatter = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'n
 				</div>
 			</div>
 		</div>
+
+		{
+			total > 0 && (
+				<div class="mt-6 rounded-xl border border-line bg-surface card-shadow">
+					<div class="px-6 py-5">
+						<p class="text-xs font-medium text-muted">Pipeline breakdown</p>
+						<div class="mt-3 flex h-2 overflow-hidden rounded-full bg-canvas">
+							{statusCounts.map(
+								({ status, count }) =>
+									count > 0 && (
+										<div
+											class={`bar-grow-x origin-left ${STATUS_META[status].bar}`}
+											style={`width: ${(count / total) * 100}%;`}
+											title={`${STATUS_META[status].label}: ${count}`}
+										/>
+									)
+							)}
+						</div>
+						<div class="mt-4 flex flex-wrap gap-x-5 gap-y-2">
+							{statusCounts.map(({ status, count }) => (
+								<div class="flex items-center gap-1.5 text-xs text-muted">
+									<span class={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${STATUS_META[status].dot}`} />
+									{STATUS_META[status].label}
+									<span class="tabular font-medium text-ink">{count}</span>
+								</div>
+							))}
+						</div>
+					</div>
+				</div>
+			)
+		}
 
 		<div class="mt-6 rounded-xl border border-line bg-surface card-shadow">
 			<div class="flex items-center justify-between border-b border-line px-6 py-4">

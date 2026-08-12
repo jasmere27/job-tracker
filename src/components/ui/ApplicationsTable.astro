@@ -7,14 +7,16 @@ interface Props {
 	sortField: string;
 	sortDir: 'asc' | 'desc';
 	statusFilter: string;
+	search?: string;
 }
 
-const { applications, sortField, sortDir, statusFilter } = Astro.props;
+const { applications, sortField, sortDir, statusFilter, search = '' } = Astro.props;
 
 function sortHref(field: string) {
 	const nextDir = sortField === field && sortDir === 'asc' ? 'desc' : 'asc';
 	const params = new URLSearchParams();
 	if (statusFilter !== 'all') params.set('status', statusFilter);
+	if (search) params.set('search', search);
 	params.set('sort', field);
 	params.set('dir', nextDir);
 	return `/applications?${params.toString()}`;
@@ -65,7 +67,9 @@ const columns: { field: string; label: string }[] = [
 					applications.length === 0 && (
 						<tr>
 							<td colspan={7} class="px-4 py-12 text-center text-sm text-muted">
-								No applications logged yet — add your first one to get started.
+								{search
+									? `No applications match "${search}".`
+									: 'No applications logged yet — add your first one to get started.'}
 							</td>
 						</tr>
 					)

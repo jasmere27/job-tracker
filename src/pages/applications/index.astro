@@ -21,9 +21,15 @@ const sortParam = Astro.url.searchParams.get('sort');
 const sortField = sortParam && SORTABLE_FIELDS.includes(sortParam) ? sortParam : 'date_applied';
 const sortDir = Astro.url.searchParams.get('dir') === 'asc' ? 'asc' : 'desc';
 
+const search = (Astro.url.searchParams.get('search') ?? '').trim();
+
 let query = supabase.from('applications').select('*');
 if (statusFilter !== 'all') {
 	query = query.eq('status', statusFilter);
+}
+if (search) {
+	const term = search.replace(/[,()%]/g, '');
+	query = query.or(`company.ilike.%${term}%,role.ilike.%${term}%`);
 }
 query = query.order(sortField, { ascending: sortDir === 'asc' });
 
@@ -50,7 +56,33 @@ const { data: applications, error } = await query;
 			</button>
 		</div>
 
-		<FilterBar activeStatus={statusFilter} />
+		<div class="mt-5 flex flex-wrap items-center justify-between gap-3">
+			<FilterBar activeStatus={statusFilter} search={search} />
+			<form method="GET" class="relative w-full sm:w-64">
+				{statusFilter !== 'all' && <input type="hidden" name="status" value={statusFilter} />}
+				<input type="hidden" name="sort" value={sortField} />
+				<input type="hidden" name="dir" value={sortDir} />
+				<svg
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					class="pointer-events-none absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2 text-subtle"
+				>
+					<circle cx="11" cy="11" r="7" />
+					<line x1="21" y1="21" x2="16.65" y2="16.65" />
+				</svg>
+				<input
+					type="search"
+					name="search"
+					value={search}
+					placeholder="Search company or role…"
+					class="w-full rounded-lg border border-line bg-surface py-1.5 pl-8 pr-3 text-sm text-ink shadow-sm placeholder:text-subtle focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent-soft"
+				/>
+			</form>
+		</div>
 
 		{error && <p class="mt-4 rounded-lg border border-danger/20 bg-danger-soft p-3 text-sm text-danger">{error.message}</p>}
 
@@ -59,6 +91,7 @@ const { data: applications, error } = await query;
 			sortField={sortField}
 			sortDir={sortDir}
 			statusFilter={statusFilter}
+			search={search}
 		/>
 
 		<ApplicationFormModal client:load />

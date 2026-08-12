@@ -3,9 +3,10 @@ import { STATUS_VALUES, type ApplicationStatus } from '../../lib/supabase/types'
 
 interface Props {
 	activeStatus: ApplicationStatus | 'all';
+	search?: string;
 }
 
-const { activeStatus } = Astro.props;
+const { activeStatus, search = '' } = Astro.props;
 
 const LABELS: Record<ApplicationStatus | 'all', string> = {
 	all: 'All',
@@ -17,17 +18,23 @@ const LABELS: Record<ApplicationStatus | 'all', string> = {
 };
 
 const options: (ApplicationStatus | 'all')[] = ['all', ...STATUS_VALUES];
+
+function href(status: ApplicationStatus | 'all') {
+	const params = new URLSearchParams();
+	if (status !== 'all') params.set('status', status);
+	if (search) params.set('search', search);
+	const query = params.toString();
+	return query ? `/applications?${query}` : '/applications';
+}
 ---
 
-<nav class="mt-5 inline-flex flex-wrap gap-1 rounded-lg border border-line bg-canvas p-1 text-sm">
+<nav class="inline-flex flex-wrap gap-1 rounded-lg border border-line bg-canvas p-1 text-sm">
 	{
 		options.map((status) => (
 			<a
-				href={status === 'all' ? '/applications' : `/applications?status=${status}`}
+				href={href(status)}
 				class={`rounded-md px-3 py-1.5 font-medium transition-colors ${
-					status === activeStatus
-						? 'bg-surface text-ink shadow-sm'
-						: 'text-muted hover:text-ink'
+					status === activeStatus ? 'bg-surface text-ink shadow-sm' : 'text-muted hover:text-ink'
 				}`}
 			>
 				{LABELS[status]}
