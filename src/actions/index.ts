@@ -98,5 +98,22 @@ export const server = {
 			}
 			return data;
 		}
+	}),
+
+	getApplicationHistory: defineAction({
+		input: z.object({ id: z.uuid() }),
+		handler: async ({ id }, context) => {
+			const supabase = createSupabaseServerClient(context.request, context.cookies);
+			const { data, error } = await supabase
+				.from('application_status_history')
+				.select('status, changed_at')
+				.eq('application_id', id)
+				.order('changed_at', { ascending: true });
+
+			if (error) {
+				throw new ActionError({ code: 'INTERNAL_SERVER_ERROR', message: error.message });
+			}
+			return data;
+		}
 	})
 };

@@ -16,6 +16,12 @@ export type ApplicationRow = {
 	updated_at: string;
 };
 
+export type ApplicationStatusHistoryRow = {
+	application_id: string;
+	status: ApplicationStatus;
+	changed_at: string;
+};
+
 export type Database = {
 	public: {
 		Tables: {
@@ -23,6 +29,12 @@ export type Database = {
 				Row: ApplicationRow;
 				Insert: Partial<ApplicationRow> & Pick<ApplicationRow, 'company' | 'role'>;
 				Update: Partial<ApplicationRow>;
+				Relationships: [];
+			};
+			application_status_history: {
+				Row: ApplicationStatusHistoryRow;
+				Insert: Partial<ApplicationStatusHistoryRow>;
+				Update: Partial<ApplicationStatusHistoryRow>;
 				Relationships: [];
 			};
 		};

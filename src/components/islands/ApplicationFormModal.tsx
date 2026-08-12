@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react';
 import { actions } from 'astro:actions';
-import { STATUS_VALUES, type ApplicationRow, type ApplicationStatus } from '../../lib/supabase/types';
+import {
+	STATUS_VALUES,
+	type ApplicationRow,
+	type ApplicationStatus,
+	type ApplicationStatusHistoryRow
+} from '../../lib/supabase/types';
 
 const STATUS_LABELS: Record<ApplicationStatus, string> = {
 	applied: 'Applied',
@@ -26,11 +31,13 @@ export default function ApplicationFormModal() {
 	const [form, setForm] = useState(EMPTY_FORM);
 	const [error, setError] = useState<string | null>(null);
 	const [submitting, setSubmitting] = useState(false);
+	const [history, setHistory] = useState<Pick<ApplicationStatusHistoryRow, 'status' | 'changed_at'>[]>([]);
 
 	useEffect(() => {
 		function onOpen(event: Event) {
 			const detail = (event as CustomEvent<ApplicationRow | null>).detail;
 			setError(null);
+			setHistory([]);
 			if (detail) {
 				setEditingId(detail.id);
 				setForm({
@@ -41,6 +48,9 @@ export default function ApplicationFormModal() {
 					follow_up_date: detail.follow_up_date ?? '',
 					notes: detail.notes ?? '',
 					job_url: detail.job_url ?? ''
+				});
+				actions.getApplicationHistory({ id: detail.id }).then(({ data }) => {
+					if (data) setHistory(data);
 				});
 			} else {
 				setEditingId(null);
@@ -88,6 +98,23 @@ export default function ApplicationFormModal() {
 				<p className="mt-0.5 text-sm text-muted">
 					{editingId ? 'Update the details for this application.' : 'Log a new application to track its progress.'}
 				</p>
+
+				{history.length > 0 && (
+					<div className="mt-3 flex flex-wrap items-center gap-x-1.5 gap-y-1 rounded-lg bg-canvas px-3 py-2 text-xs">
+						{history.map((entry, i) => (
+							<span key={i} className="flex items-center gap-1.5">
+								{i > 0 && <span className="text-subtle">→</span>}
+								<span className="font-medium text-ink">{STATUS_LABELS[entry.status]}</span>
+								<span className="text-subtle">
+									{new Date(entry.changed_at).toLocaleDateString(undefined, {
+										month: 'short',
+										day: 'numeric'
+									})}
+								</span>
+							</span>
+						))}
+					</div>
+				)}
 
 				{error && (
 					<p className="mt-3 rounded-lg border border-danger/20 bg-danger-soft p-2.5 text-sm text-danger">{error}</p>

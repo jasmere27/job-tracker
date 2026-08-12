@@ -34,6 +34,26 @@ if (search) {
 query = query.order(sortField, { ascending: sortDir === 'asc' });
 
 const { data: applications, error } = await query;
+
+function csvField(value: string | null | undefined) {
+	const text = value ?? '';
+	return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+const csvRows = [
+	['Company', 'Role', 'Status', 'Date applied', 'Follow-up date', 'Job URL', 'Notes'],
+	...(applications ?? []).map((a) => [
+		a.company,
+		a.role,
+		a.status,
+		a.date_applied,
+		a.follow_up_date ?? '',
+		a.job_url ?? '',
+		a.notes ?? ''
+	])
+];
+const csvContent = csvRows.map((row) => row.map(csvField).join(',')).join('\n');
+const csvHref = `data:text/csv;charset=utf-8,${encodeURIComponent(csvContent)}`;
 ---
 
 <BaseLayout title="Applications — Job Application Tracker">
@@ -43,17 +63,31 @@ const { data: applications, error } = await query;
 				<h1 class="text-2xl font-semibold tracking-tight text-ink">Applications</h1>
 				<p class="mt-1 text-sm text-muted">Every application you've logged, sortable and filterable.</p>
 			</div>
-			<button
-				type="button"
-				id="add-application"
-				class="press flex flex-shrink-0 items-center gap-1.5 rounded-md bg-accent px-3.5 py-2 text-sm font-medium text-white shadow-sm hover:bg-accent-dim"
-			>
-				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="h-4 w-4">
-					<line x1="12" y1="5" x2="12" y2="19" />
-					<line x1="5" y1="12" x2="19" y2="12" />
-				</svg>
-				Add application
-			</button>
+			<div class="flex flex-shrink-0 items-center gap-2">
+				<a
+					href={csvHref}
+					download="applications.csv"
+					class="press flex items-center gap-1.5 rounded-md border border-line bg-surface px-3.5 py-2 text-sm font-medium text-ink shadow-sm hover:bg-canvas"
+				>
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
+						<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+						<polyline points="7 10 12 15 17 10" />
+						<line x1="12" y1="15" x2="12" y2="3" />
+					</svg>
+					Export CSV
+				</a>
+				<button
+					type="button"
+					id="add-application"
+					class="press flex items-center gap-1.5 rounded-md bg-accent px-3.5 py-2 text-sm font-medium text-white shadow-sm hover:bg-accent-dim"
+				>
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="h-4 w-4">
+						<line x1="12" y1="5" x2="12" y2="19" />
+						<line x1="5" y1="12" x2="19" y2="12" />
+					</svg>
+					Add application
+				</button>
+			</div>
 		</div>
 
 		<div class="mt-5 flex flex-wrap items-center justify-between gap-3">
