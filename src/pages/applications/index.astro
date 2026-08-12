@@ -1,0 +1,72 @@
+---
+export const prerender = false;
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import FilterBar from '../../components/ui/FilterBar.astro';
+import ApplicationsTable from '../../components/ui/ApplicationsTable.astro';
+import ApplicationFormModal from '../../components/islands/ApplicationFormModal';
+import { createSupabaseServerClient } from '../../lib/supabase/server';
+import { STATUS_VALUES, type ApplicationStatus } from '../../lib/supabase/types';
+
+const supabase = createSupabaseServerClient(Astro.request, Astro.cookies);
+
+const statusParam = Astro.url.searchParams.get('status');
+const statusFilter: ApplicationStatus | 'all' =
+	statusParam && (STATUS_VALUES as readonly string[]).includes(statusParam)
+		? (statusParam as ApplicationStatus)
+		: 'all';
+
+const SORTABLE_FIELDS = ['company', 'role', 'status', 'date_applied', 'follow_up_date'];
+const sortParam = Astro.url.searchParams.get('sort');
+const sortField = sortParam && SORTABLE_FIELDS.includes(sortParam) ? sortParam : 'date_applied';
+const sortDir = Astro.url.searchParams.get('dir') === 'asc' ? 'asc' : 'desc';
+
+let query = supabase.from('applications').select('*');
+if (statusFilter !== 'all') {
+	query = query.eq('status', statusFilter);
+}
+query = query.order(sortField, { ascending: sortDir === 'asc' });
+
+const { data: applications, error } = await query;
+---
+
+<BaseLayout title="Applications — Job Tracker">
+	<div class="mx-auto max-w-5xl px-4 py-8 sm:px-8 sm:py-10">
+		<div class="flex items-center justify-between gap-4">
+			<div>
+				<h1 class="text-2xl font-semibold tracking-tight text-ink">Applications</h1>
+				<p class="mt-1 text-sm text-muted">Every application you've logged, sortable and filterable.</p>
+			</div>
+			<button
+				type="button"
+				id="add-application"
+				class="press flex flex-shrink-0 items-center gap-1.5 rounded-md bg-accent px-3.5 py-2 text-sm font-medium text-white shadow-sm hover:bg-accent-dim"
+			>
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="h-4 w-4">
+					<line x1="12" y1="5" x2="12" y2="19" />
+					<line x1="5" y1="12" x2="19" y2="12" />
+				</svg>
+				Add application
+			</button>
+		</div>
+
+		<FilterBar activeStatus={statusFilter} />
+
+		{error && <p class="mt-4 rounded-lg border border-danger/20 bg-danger-soft p-3 text-sm text-danger">{error.message}</p>}
+
+		<ApplicationsTable
+			applications={applications ?? []}
+			sortField={sortField}
+			sortDir={sortDir}
+			statusFilter={statusFilter}
+		/>
+
+		<ApplicationFormModal client:load />
+	</div>
+</BaseLayout>
+
+<script>
+	document.getElementById('add-application')?.addEventListener('click', () => {
+		window.dispatchEvent(new CustomEvent('open-application-modal', { detail: null }));
+	});
+</script>

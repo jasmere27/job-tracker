@@ -1,0 +1,79 @@
+---
+export const prerender = false;
+
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { createSupabaseServerClient } from '../lib/supabase/server';
+
+let message: string | null = null;
+let error: string | null = Astro.url.searchParams.get('error');
+
+if (Astro.request.method === 'POST') {
+	const formData = await Astro.request.formData();
+	const email = formData.get('email');
+
+	if (typeof email === 'string' && email.length > 0) {
+		const supabase = createSupabaseServerClient(Astro.request, Astro.cookies);
+		const { error: otpError } = await supabase.auth.signInWithOtp({
+			email,
+			options: {
+				emailRedirectTo: new URL('/api/auth/callback', Astro.url.origin).toString()
+			}
+		});
+
+		if (otpError) {
+			console.error('signInWithOtp failed:', otpError.status, otpError.message);
+			error = `Could not send magic link: ${otpError.message}`;
+		} else {
+			message = 'Check your email for a magic link to sign in.';
+		}
+	} else {
+		error = 'Please enter a valid email address.';
+	}
+}
+---
+
+<BaseLayout title="Sign in — Job Tracker">
+	<main class="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-canvas px-4 py-8">
+		<div
+			class="pointer-events-none absolute top-1/2 left-1/2 h-[520px] w-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent/10 blur-3xl"
+			aria-hidden="true"
+		/>
+
+		<div class="relative w-full max-w-sm">
+			<div class="mb-6 flex items-center justify-center gap-2">
+				<span class="flex h-8 w-8 items-center justify-center rounded-md bg-accent">
+					<svg viewBox="0 0 24 24" fill="none" class="h-[18px] w-[18px]">
+						<path d="M6 15L11 10L15 14L19 8" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+					</svg>
+				</span>
+				<span class="text-[15px] font-semibold tracking-tight text-ink">Job Tracker</span>
+			</div>
+
+			<div class="card-shadow-lg rounded-xl border border-line bg-surface p-8">
+				<h1 class="text-xl font-semibold tracking-tight text-ink">Sign in</h1>
+				<p class="mt-1.5 text-sm text-muted">We'll email you a magic link — no password needed.</p>
+
+				{message && <p class="mt-5 rounded-lg border border-success/20 bg-success-soft p-3 text-sm text-success">{message}</p>}
+				{error && <p class="mt-5 rounded-lg border border-danger/20 bg-danger-soft p-3 text-sm text-danger">{error}</p>}
+
+				<form method="POST" class="mt-6 flex flex-col gap-1.5">
+					<label class="text-xs font-medium text-muted" for="email">Email</label>
+					<input
+						id="email"
+						name="email"
+						type="email"
+						required
+						class="rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink shadow-sm transition-colors placeholder:text-subtle focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent-soft"
+						placeholder="you@example.com"
+					/>
+					<button
+						type="submit"
+						class="press mt-3 rounded-md bg-accent px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-accent-dim"
+					>
+						Send magic link
+					</button>
+				</form>
+			</div>
+		</div>
+	</main>
+</BaseLayout>

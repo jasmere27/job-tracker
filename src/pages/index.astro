@@ -1,0 +1,117 @@
+---
+export const prerender = false;
+
+import BaseLayout from '../layouts/BaseLayout.astro';
+import StatusBadge from '../components/ui/StatusBadge.astro';
+import { createSupabaseServerClient } from '../lib/supabase/server';
+
+const supabase = createSupabaseServerClient(Astro.request, Astro.cookies);
+const { data: applications, error } = await supabase.from('applications').select('*');
+
+const all = applications ?? [];
+const total = all.length;
+const responded = all.filter((a) => a.status !== 'applied');
+const responseRate = total > 0 ? Math.round((responded.length / total) * 100) : 0;
+
+const today = new Date().toISOString().slice(0, 10);
+const overdue = all
+	.filter((a) => a.follow_up_date && a.follow_up_date < today && !['offer', 'rejected'].includes(a.status))
+	.sort((a, b) => (a.follow_up_date! < b.follow_up_date! ? -1 : 1));
+
+const WEEKS = 8;
+const todayDate = new Date(today);
+const weeks = Array.from({ length: WEEKS }, (_, i) => {
+	const end = new Date(todayDate);
+	end.setDate(end.getDate() - (WEEKS - 1 - i) * 7);
+	const start = new Date(end);
+	start.setDate(start.getDate() - 6);
+	const startStr = start.toISOString().slice(0, 10);
+	const endStr = end.toISOString().slice(0, 10);
+	const count = all.filter((a) => a.date_applied >= startStr && a.date_applied <= endStr).length;
+	return { endStr, count };
+});
+const maxWeekCount = Math.max(1, ...weeks.map((w) => w.count));
+const weekFormatter = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' });
+---
+
+<BaseLayout title="Job Tracker — Dashboard">
+	<div class="mx-auto max-w-5xl px-4 py-8 sm:px-8 sm:py-10">
+		<h1 class="text-2xl font-semibold tracking-tight text-ink">Dashboard</h1>
+		<p class="mt-1 text-sm text-muted">An overview of your job search pipeline.</p>
+
+		{
+			error && (
+				<p class="mt-4 rounded-lg border border-danger/20 bg-danger-soft p-3 text-sm text-danger">{error.message}</p>
+			)
+		}
+
+		<div class="mt-6 rounded-xl border border-line bg-surface card-shadow">
+			<div class="grid grid-cols-1 divide-y divide-line sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+				<div class="px-6 py-5">
+					<p class="text-xs font-medium text-muted">Total applications</p>
+					<p class="mt-1.5 tabular text-3xl font-semibold tracking-tight text-ink">{total}</p>
+				</div>
+				<div class="px-6 py-5">
+					<p class="text-xs font-medium text-muted">Response rate</p>
+					<p class="mt-1.5 tabular text-3xl font-semibold tracking-tight text-ink">{responseRate}%</p>
+				</div>
+				<div class="px-6 py-5">
+					<p class="text-xs font-medium text-muted">Overdue follow-ups</p>
+					<p class={`mt-1.5 tabular text-3xl font-semibold tracking-tight ${overdue.length > 0 ? 'text-danger' : 'text-ink'}`}>
+						{overdue.length}
+					</p>
+				</div>
+			</div>
+
+			<div class="border-t border-line px-6 py-5">
+				<p class="text-xs font-medium text-muted">Applications per week</p>
+				<div class="mt-4 flex h-16 gap-2">
+					{weeks.map((w, i) => (
+						<div class="group relative h-full flex-1">
+							<div
+								class="bar-grow absolute bottom-0 left-0 right-0 origin-bottom rounded-t-sm bg-accent/85 transition-colors group-hover:bg-accent"
+								style={`height: ${Math.max(4, (w.count / maxWeekCount) * 100)}%; animation-delay: ${i * 40}ms;`}
+							/>
+							<span class="pointer-events-none absolute -top-6 left-1/2 -translate-x-1/2 rounded-md bg-ink px-1.5 py-0.5 text-[10px] font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">
+								{w.count}
+							</span>
+						</div>
+					))}
+				</div>
+				<div class="mt-2 flex gap-2 font-mono text-[10px] text-subtle">
+					{weeks.map((w) => (
+						<span class="flex-1 text-center">{weekFormatter.format(new Date(w.endStr))}</span>
+					))}
+				</div>
+			</div>
+		</div>
+
+		<div class="mt-6 rounded-xl border border-line bg-surface card-shadow">
+			<div class="flex items-center justify-between border-b border-line px-6 py-4">
+				<h2 class="text-sm font-semibold text-ink">Needs attention</h2>
+				<a href="/applications" class="text-xs font-medium text-accent hover:text-accent-dim">
+					View all applications
+				</a>
+			</div>
+			{
+				overdue.length === 0 ? (
+					<p class="px-6 py-8 text-center text-sm text-muted">Nothing overdue — nice work.</p>
+				) : (
+					<ul class="divide-y divide-line">
+						{overdue.map((app) => (
+							<li class="flex items-center justify-between gap-4 px-6 py-3.5">
+								<div class="min-w-0">
+									<p class="truncate text-sm font-medium text-ink">
+										{app.company} <span class="text-muted">·</span> {app.role}
+									</p>
+									<p class="mt-0.5 text-xs text-danger">Follow-up was due {app.follow_up_date}</p>
+								</div>
+								<StatusBadge status={app.status} />
+							</li>
+						))}
+					</ul>
+				)
+			}
+		</div>
+	</div>
+</BaseLayout>

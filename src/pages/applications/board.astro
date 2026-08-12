@@ -1,0 +1,47 @@
+---
+export const prerender = false;
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import KanbanBoard from '../../components/islands/KanbanBoard';
+import ApplicationFormModal from '../../components/islands/ApplicationFormModal';
+import { createSupabaseServerClient } from '../../lib/supabase/server';
+
+const supabase = createSupabaseServerClient(Astro.request, Astro.cookies);
+const { data: applications, error } = await supabase
+	.from('applications')
+	.select('*')
+	.order('date_applied', { ascending: false });
+---
+
+<BaseLayout title="Board — Job Tracker">
+	<div class="mx-auto max-w-6xl px-4 py-8 sm:px-8 sm:py-10">
+		<div class="flex items-center justify-between gap-4">
+			<div>
+				<h1 class="text-2xl font-semibold tracking-tight text-ink">Board</h1>
+				<p class="mt-1 text-sm text-muted">Drag applications between stages as they move.</p>
+			</div>
+			<button
+				type="button"
+				id="add-application"
+				class="press flex flex-shrink-0 items-center gap-1.5 rounded-md bg-accent px-3.5 py-2 text-sm font-medium text-white shadow-sm hover:bg-accent-dim"
+			>
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="h-4 w-4">
+					<line x1="12" y1="5" x2="12" y2="19" />
+					<line x1="5" y1="12" x2="19" y2="12" />
+				</svg>
+				Add application
+			</button>
+		</div>
+
+		{error && <p class="mt-4 rounded-lg border border-danger/20 bg-danger-soft p-3 text-sm text-danger">{error.message}</p>}
+
+		<KanbanBoard client:load applications={applications ?? []} />
+		<ApplicationFormModal client:load />
+	</div>
+</BaseLayout>
+
+<script>
+	document.getElementById('add-application')?.addEventListener('click', () => {
+		window.dispatchEvent(new CustomEvent('open-application-modal', { detail: null }));
+	});
+</script>

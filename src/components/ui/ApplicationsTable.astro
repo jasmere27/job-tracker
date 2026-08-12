@@ -1,0 +1,160 @@
+---
+import StatusBadge from './StatusBadge.astro';
+import type { ApplicationRow } from '../../lib/supabase/types';
+
+interface Props {
+	applications: ApplicationRow[];
+	sortField: string;
+	sortDir: 'asc' | 'desc';
+	statusFilter: string;
+}
+
+const { applications, sortField, sortDir, statusFilter } = Astro.props;
+
+function sortHref(field: string) {
+	const nextDir = sortField === field && sortDir === 'asc' ? 'desc' : 'asc';
+	const params = new URLSearchParams();
+	if (statusFilter !== 'all') params.set('status', statusFilter);
+	params.set('sort', field);
+	params.set('dir', nextDir);
+	return `/applications?${params.toString()}`;
+}
+
+const columns: { field: string; label: string }[] = [
+	{ field: 'company', label: 'Company' },
+	{ field: 'role', label: 'Role' },
+	{ field: 'status', label: 'Status' },
+	{ field: 'date_applied', label: 'Date applied' },
+	{ field: 'follow_up_date', label: 'Follow-up' }
+];
+---
+
+<div class="mt-5 overflow-hidden rounded-xl border border-line bg-surface card-shadow">
+	<div class="overflow-x-auto">
+		<table class="min-w-full text-sm">
+			<thead>
+				<tr class="border-b border-line bg-canvas/60">
+					{
+						columns.map((col) => (
+							<th class="px-4 py-2.5 text-left text-xs font-medium text-muted">
+								<a href={sortHref(col.field)} class="inline-flex items-center gap-1 hover:text-ink">
+									{col.label}
+									<svg
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										class={`h-3 w-3 transition-transform ${
+											sortField === col.field ? 'text-ink' : 'text-subtle'
+										} ${sortField === col.field && sortDir === 'asc' ? 'rotate-180' : ''}`}
+									>
+										<polyline points="6 9 12 15 18 9" />
+									</svg>
+								</a>
+							</th>
+						))
+					}
+					<th class="px-4 py-2.5 text-left text-xs font-medium text-muted">Job</th>
+					<th class="px-4 py-2.5 text-right text-xs font-medium text-muted">Actions</th>
+				</tr>
+			</thead>
+			<tbody class="divide-y divide-line">
+				{
+					applications.length === 0 && (
+						<tr>
+							<td colspan={7} class="px-4 py-12 text-center text-sm text-muted">
+								No applications logged yet — add your first one to get started.
+							</td>
+						</tr>
+					)
+				}
+				{
+					applications.map((app) => (
+						<tr class="transition-colors hover:bg-canvas/60">
+							<td class="px-4 py-3 font-medium text-ink">{app.company}</td>
+							<td class="px-4 py-3 text-muted">{app.role}</td>
+							<td class="px-4 py-3">
+								<StatusBadge status={app.status} />
+							</td>
+							<td class="px-4 py-3 font-mono tabular text-xs text-muted">{app.date_applied}</td>
+							<td class="px-4 py-3 font-mono tabular text-xs text-muted">{app.follow_up_date ?? '—'}</td>
+							<td class="px-4 py-3">
+								{app.job_url && (
+									<a
+										href={app.job_url}
+										target="_blank"
+										rel="noreferrer"
+										class="inline-flex items-center gap-1 text-accent hover:text-accent-dim"
+										aria-label="Open job posting"
+									>
+										<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5">
+											<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+											<polyline points="15 3 21 3 21 9" />
+											<line x1="10" y1="14" x2="21" y2="3" />
+										</svg>
+									</a>
+								)}
+							</td>
+							<td class="px-4 py-3 text-right">
+								<div class="flex items-center justify-end gap-1">
+									<button
+										type="button"
+										class="edit-trigger rounded-md p-1.5 text-muted hover:bg-canvas hover:text-ink"
+										aria-label="Edit application"
+										data-application={JSON.stringify(app)}
+									>
+										<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
+											<path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+										</svg>
+									</button>
+									<button
+										type="button"
+										class="delete-trigger rounded-md p-1.5 text-muted hover:bg-danger-soft hover:text-danger"
+										aria-label="Delete application"
+										data-id={app.id}
+									>
+										<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
+											<polyline points="3 6 5 6 21 6" />
+											<path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+											<path d="M10 11v6" />
+											<path d="M14 11v6" />
+											<path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+										</svg>
+									</button>
+								</div>
+							</td>
+						</tr>
+					))
+				}
+			</tbody>
+		</table>
+	</div>
+</div>
+
+<script>
+	import { actions } from 'astro:actions';
+
+	document.querySelectorAll<HTMLButtonElement>('.edit-trigger').forEach((button) => {
+		button.addEventListener('click', () => {
+			const application = JSON.parse(button.dataset.application ?? 'null');
+			window.dispatchEvent(new CustomEvent('open-application-modal', { detail: application }));
+		});
+	});
+
+	document.querySelectorAll<HTMLButtonElement>('.delete-trigger').forEach((button) => {
+		button.addEventListener('click', async () => {
+			const id = button.dataset.id;
+			if (!id) return;
+			if (!confirm('Delete this application?')) return;
+
+			const { error } = await actions.deleteApplication({ id });
+			if (error) {
+				alert(`Could not delete: ${error.message}`);
+				return;
+			}
+			window.location.reload();
+		});
+	});
+</script>

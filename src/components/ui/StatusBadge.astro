@@ -1,0 +1,33 @@
+---
+import type { ApplicationStatus } from '../../lib/supabase/types';
+
+interface Props {
+	status: ApplicationStatus;
+	class?: string;
+}
+
+const { status, class: className = '' } = Astro.props;
+
+const LABELS: Record<ApplicationStatus, string> = {
+	applied: 'Applied',
+	phone_screen: 'Phone Screen',
+	interview: 'Interview',
+	offer: 'Offer',
+	rejected: 'Rejected'
+};
+
+const STYLES: Record<ApplicationStatus, { chip: string; dot: string }> = {
+	applied: { chip: 'bg-ink/[0.04] text-muted', dot: 'bg-subtle' },
+	phone_screen: { chip: 'bg-accent-soft text-accent-dim', dot: 'bg-accent' },
+	interview: { chip: 'bg-warning-soft text-warning', dot: 'bg-warning' },
+	offer: { chip: 'bg-success-soft text-success', dot: 'bg-success' },
+	rejected: { chip: 'bg-danger-soft text-danger', dot: 'bg-danger' }
+};
+
+const { chip, dot } = STYLES[status];
+---
+
+<span class={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${chip} ${className}`}>
+	<span class={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${dot}`} />
+	{LABELS[status]}
+</span>
